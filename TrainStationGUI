@@ -1,0 +1,253 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.HashMap;
+
+// Abstract class representing a train line
+abstract class TrainLine {
+    protected HashMap<String, Double> fareMatrix;
+
+    public TrainLine() {
+        fareMatrix = new HashMap<>();
+        initializeFareMatrix();
+    }
+
+    // Abstract method to initialize the fare matrix for the train line
+    protected abstract void initializeFareMatrix();
+
+    // Method to get the fare for a specific station
+    public double getFare(String station) {
+        return fareMatrix.getOrDefault(station, 0.0);
+    }
+}
+
+// LRT 1 train line
+class LRT1 extends TrainLine {
+    @Override
+    protected void initializeFareMatrix() {
+        fareMatrix.put("Baclaran", 15.0);
+        fareMatrix.put("EDSA", 15.0);
+        // Add other fare values for LRT 1
+    }
+}
+
+// LRT 2 train line
+class LRT2 extends TrainLine {
+    @Override
+    protected void initializeFareMatrix() {
+        fareMatrix.put("Recto", 20.0);
+        fareMatrix.put("Legarda", 20.0);
+        // Add other fare values for LRT 2
+    }
+}
+
+// MRT train line
+class MRT extends TrainLine {
+    @Override
+    protected void initializeFareMatrix() {
+        fareMatrix.put("North Avenue", 25.0);
+        fareMatrix.put("Quezon Avenue", 25.0);
+        // Add other fare values for MRT
+    }
+}
+
+public class TrainStationGUI extends JFrame {
+    private JRadioButton lrt1RadioButton;
+    private JRadioButton lrt2RadioButton;
+    private JRadioButton mrtRadioButton;
+    private JComboBox<String> originComboBox;
+    private JComboBox<String> destinationComboBox;
+    private JTextField paymentTextField;
+    private JButton calculateButton;
+    private JLabel fareLabel;
+
+    private TrainLine selectedTrainLine;
+
+    public TrainStationGUI() {
+        setTitle("Train Station GUI");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+        setResizable(false);
+
+        JPanel trainSelectionPanel = createTrainSelectionPanel();
+        JPanel stationSelectionPanel = createStationSelectionPanel();
+        JPanel paymentPanel = createPaymentPanel();
+        JPanel farePanel = createFarePanel();
+
+        add(trainSelectionPanel, BorderLayout.NORTH);
+        add(stationSelectionPanel, BorderLayout.CENTER);
+        add(paymentPanel, BorderLayout.SOUTH);
+        add(farePanel, BorderLayout.EAST);
+
+        calculateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    calculateFare();
+                } catch (InsufficientPaymentException ex) {
+                    JOptionPane.showMessageDialog(TrainStationGUI.this,
+                            ex.getMessage(), "Insufficient Payment", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        pack();
+        setLocationRelativeTo(null);
+        setVisible(true);
+    }
+
+    // Method to create the train selection panel
+    private JPanel createTrainSelectionPanel() {
+        JPanel panel = new JPanel();
+        panel.setBorder(BorderFactory.createTitledBorder("Select Train Line"));
+
+        lrt1RadioButton = new JRadioButton("LRT 1");
+        lrt2RadioButton = new JRadioButton("LRT 2");
+        mrtRadioButton = new JRadioButton("MRT");
+
+        ButtonGroup trainButtonGroup = new ButtonGroup();
+        trainButtonGroup.add(lrt1RadioButton);
+        trainButtonGroup.add(lrt2RadioButton);
+        trainButtonGroup.add(mrtRadioButton);
+        panel.add(lrt1RadioButton);
+        panel.add(lrt2RadioButton);
+        panel.add(mrtRadioButton);
+
+        ActionListener trainSelectionListener = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateStationComboBoxes();
+            }
+        };
+
+        lrt1RadioButton.addActionListener(trainSelectionListener);
+        lrt2RadioButton.addActionListener(trainSelectionListener);
+        mrtRadioButton.addActionListener(trainSelectionListener);
+
+        return panel;
+    }
+
+    // Method to create the station selection panel
+    private JPanel createStationSelectionPanel() {
+        JPanel panel = new JPanel();
+        panel.setBorder(BorderFactory.createTitledBorder("Select Origin and Destination"));
+
+        originComboBox = new JComboBox<>();
+        destinationComboBox = new JComboBox<>();
+
+        JLabel originLabel = new JLabel("Origin:");
+        JLabel destinationLabel = new JLabel("Destination:");
+
+        panel.add(originLabel);
+        panel.add(originComboBox);
+        panel.add(destinationLabel);
+        panel.add(destinationComboBox);
+
+        return panel;
+    }
+
+    // Method to create the payment panel
+    private JPanel createPaymentPanel() {
+        JPanel panel = new JPanel();
+        panel.setBorder(BorderFactory.createTitledBorder("Payment"));
+
+        JLabel paymentLabel = new JLabel("Payment:");
+        paymentTextField = new JTextField(10);
+        calculateButton = new JButton("Calculate");
+
+        panel.add(paymentLabel);
+        panel.add(paymentTextField);
+        panel.add(calculateButton);
+
+        return panel;
+    }
+
+    // Method to create the fare panel
+    private JPanel createFarePanel() {
+        JPanel panel = new JPanel();
+        panel.setBorder(BorderFactory.createTitledBorder("Fare"));
+
+        fareLabel = new JLabel("Fare: ");
+
+        panel.add(fareLabel);
+
+        return panel;
+    }
+
+    // Method to update the station drop-down lists based on the selected train line
+    private void updateStationComboBoxes() {
+        originComboBox.removeAllItems();
+        destinationComboBox.removeAllItems();
+
+        if (lrt1RadioButton.isSelected()) {
+            selectedTrainLine = new LRT1();
+            originComboBox.addItem("Baclaran");
+            originComboBox.addItem("EDSA");
+            // Add other stations for LRT 1
+
+            destinationComboBox.addItem("Baclaran");
+            destinationComboBox.addItem("EDSA");
+            // Add other stations for LRT 1
+        } else if (lrt2RadioButton.isSelected()) {
+            selectedTrainLine = new LRT2();
+            // Add stations for LRT 2
+
+            originComboBox.addItem("Recto");
+            originComboBox.addItem("Legarda");
+            // Add other stations for LRT 2
+
+            destinationComboBox.addItem("Recto");
+            destinationComboBox.addItem("Legarda");
+            // Add other stations for LRT 2
+        } else if (mrtRadioButton.isSelected()) {
+            selectedTrainLine = new MRT();
+            // Add stations for MRT
+
+            originComboBox.addItem("North Avenue");
+            originComboBox.addItem("Quezon Avenue");
+            // Add other stations for MRT
+
+            destinationComboBox.addItem("North Avenue");
+            destinationComboBox.addItem("Quezon Avenue");
+            // Add other stations for MRT
+        }
+    }
+
+    // Method to calculate the fare based on the selected destination station
+    private void calculateFare() throws InsufficientPaymentException {
+        String destinationStation = (String) destinationComboBox.getSelectedItem();
+        String paymentText = paymentTextField.getText();
+
+        if (destinationStation == null || paymentText.isEmpty()) {
+            throw new InsufficientPaymentException("Please select a destination and enter the payment amount.");
+        }
+
+        double fare = selectedTrainLine.getFare(destinationStation);
+        double payment = Double.parseDouble(paymentText);
+
+        if (payment < fare) {
+            throw new InsufficientPaymentException("Insufficient payment amount. Please enter a sufficient amount.");
+        }
+
+        double change = payment - fare;
+
+        // Display the fare and change in the fareLabel
+        fareLabel.setText("Fare: " + fare + " PHP    Change: " + change + " PHP");
+    }
+
+    // Custom exception class for insufficient payment
+    private class InsufficientPaymentException extends Exception {
+        public InsufficientPaymentException(String message) {
+            super(message);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                new TrainStationGUI();
+            }
+        });
+    }
+}
